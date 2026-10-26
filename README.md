@@ -28,6 +28,8 @@ py dev.py            # o: python dev.py
 ```
 Levanta el backend y el frontend a la vez (salida prefijada `[api]` / `[web]`), abre el navegador en `/entidades` y para los dos con `Ctrl+C`. Acepta `--no-browser` para no abrir el navegador.
 
+El primer arranque crea el administrador inicial con lo que digan `ADMIN_INICIAL_EMAIL` y `ADMIN_INICIAL_PASSWORD` en `backend/.env` (`admin@ong.org` / `Admin67@` por defecto). Cámbialas antes de usar el sistema de verdad.
+
 ### 1) Levantar PostgreSQL
 ```bash
 docker compose up -d
