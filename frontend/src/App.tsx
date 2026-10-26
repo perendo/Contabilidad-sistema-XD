@@ -1,27 +1,40 @@
-import AppBar from '@mui/material/AppBar'
-import Container from '@mui/material/Container'
-import Toolbar from '@mui/material/Toolbar'
-import Typography from '@mui/material/Typography'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import Box from '@mui/material/Box'
+import CircularProgress from '@mui/material/CircularProgress'
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import MarcoApp from './components/MarcoApp.tsx'
 import EntidadesPage from './pages/EntidadesPage.tsx'
+import LoginPage from './pages/LoginPage.tsx'
+import { useSesion } from './sesion.tsx'
+
+function RutaPrivada() {
+  const { usuario, cargando } = useSesion()
+
+  if (cargando) {
+    return (
+      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <CircularProgress />
+      </Box>
+    )
+  }
+
+  if (!usuario) {
+    return <Navigate to="/login" replace />
+  }
+
+  return <Outlet />
+}
 
 function App() {
   return (
-    <>
-      <AppBar position="static">
-        <Toolbar>
-          <Typography variant="h6" component="h1">
-            Sistema Contable ONG
-          </Typography>
-        </Toolbar>
-      </AppBar>
-      <Container maxWidth="md" sx={{ py: 4 }}>
-        <Routes>
-          <Route path="/" element={<Navigate to="/entidades" replace />} />
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route element={<RutaPrivada />}>
+        <Route element={<MarcoApp />}>
           <Route path="/entidades" element={<EntidadesPage />} />
-        </Routes>
-      </Container>
-    </>
+        </Route>
+      </Route>
+      <Route path="*" element={<Navigate to="/entidades" replace />} />
+    </Routes>
   )
 }
 

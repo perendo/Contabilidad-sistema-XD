@@ -13,6 +13,7 @@ import TableRow from '@mui/material/TableRow'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import axios from 'axios'
+import { cliente } from '../api/cliente.ts'
 
 type Ejercicio = {
   id: string
@@ -31,8 +32,6 @@ type Entidad = {
   ejercicios: Ejercicio[]
 }
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1'
-
 function EntidadesPage() {
   const [entidades, setEntidades] = useState<Entidad[]>([])
   const [cif, setCif] = useState('')
@@ -41,7 +40,7 @@ function EntidadesPage() {
   const [error, setError] = useState('')
 
   const cargar = useCallback(async () => {
-    const { data } = await axios.get<Entidad[]>(`${API_URL}/entidades`)
+    const { data } = await cliente.get<Entidad[]>('/entidades')
     setEntidades(data)
   }, [])
 
@@ -53,7 +52,7 @@ function EntidadesPage() {
     evento.preventDefault()
     setError('')
     try {
-      await axios.post(`${API_URL}/entidades`, { cif, nombre, anio: Number(anio) })
+      await cliente.post('/entidades', { cif, nombre, anio: Number(anio) })
       setCif('')
       setNombre('')
       await cargar()
