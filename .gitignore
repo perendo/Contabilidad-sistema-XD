@@ -24,6 +24,3 @@ Thumbs.db
 
 # Varios
 *.log
-
-# Repositorio anidado con las skills (tiene su propio .git)
-/hola-ai/

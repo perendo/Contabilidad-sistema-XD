@@ -1,0 +1,3 @@
+[submodule "hola-ai"]
+	path = hola-ai
+	url = https://github.com/nschurmann/hola-ai

@@ -13,6 +13,14 @@ Toda la documentación debe estar en español.
 
 ## Puesta en marcha (local)
 
+### Clonar el repositorio
+Las skills de `.opencode` viven en el submódulo `hola-ai`, así que hay que traerlas:
+```bash
+git clone --recurse-submodules https://github.com/perendo/Contabilidad-sistema-XD.git
+# si ya lo clonaste sin submódulos:
+git submodule update --init --recursive
+```
+
 ### Arranque rápido
 Con el entorno virtual creado y las dependencias instaladas:
 ```bash
