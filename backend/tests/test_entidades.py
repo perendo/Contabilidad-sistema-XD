@@ -1,5 +1,5 @@
-def test_crea_entidad_con_su_ejercicio_del_anio_indicado(client):
-    respuesta = client.post(
+def test_crea_entidad_con_su_ejercicio_del_anio_indicado(cliente_admin):
+    respuesta = cliente_admin.post(
         "/api/v1/entidades",
         json={"cif": "G12345678", "nombre": "Fundación Ejemplo", "anio": 2026},
     )
@@ -13,12 +13,12 @@ def test_crea_entidad_con_su_ejercicio_del_anio_indicado(client):
     ]
 
 
-def test_rechaza_un_cif_ya_registrado_sin_crear_nada(client):
+def test_rechaza_un_cif_ya_registrado_sin_crear_nada(cliente_admin):
     datos = {"cif": "G12345678", "nombre": "Fundación Ejemplo", "anio": 2026}
-    assert client.post("/api/v1/entidades", json=datos).status_code == 201
+    assert cliente_admin.post("/api/v1/entidades", json=datos).status_code == 201
 
-    segunda = client.post("/api/v1/entidades", json={**datos, "nombre": "Otra ong", "anio": 2027})
+    segunda = cliente_admin.post("/api/v1/entidades", json={**datos, "nombre": "Otra ong", "anio": 2027})
 
     assert segunda.status_code == 409
-    entidades = client.get("/api/v1/entidades").json()
+    entidades = cliente_admin.get("/api/v1/entidades").json()
     assert [(e["cif"], len(e["ejercicios"])) for e in entidades] == [("G12345678", 1)]
