@@ -2,6 +2,8 @@ import os
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+CONTRASENA_ADMIN_DE_FABRICA = "Admin67@"
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
@@ -18,6 +20,12 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "cambiar-esta-clave-en-produccion"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 días
     USE_SQLITE: bool = True
+
+    # Administrador que se crea solo en el primer arranque, si no existe.
+    # Valores de desarrollo: con PostgreSQL el arranque se niega a usar la
+    # contraseña de fábrica.
+    ADMIN_INICIAL_EMAIL: str = "admin@ong.org"
+    ADMIN_INICIAL_PASSWORD: str = CONTRASENA_ADMIN_DE_FABRICA
 
     @property
     def DATABASE_URL(self) -> str:
