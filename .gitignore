@@ -1,0 +1,29 @@
+# Entorno y secretos: el .env lleva la SECRET_KEY, nunca se versiona
+backend/.env
+!.env.example
+
+# Base de datos local (se recrea con `alembic upgrade head`)
+backend/*.db
+
+# Python
+backend/.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# Editores y sistema operativo
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# Varios
+*.log
+
+# Repositorio anidado con las skills (tiene su propio .git)
+/hola-ai/
