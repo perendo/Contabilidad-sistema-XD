@@ -10,4 +10,11 @@ Los identificadores se mantienen estables respecto al backlog original para no r
 | 3 | Como tesorero/a, quiero importar movimientos bancarios desde un archivo para la entidad seleccionada, para generar borradores de apuntes pendientes de revisión. | #2 |
 | 4 | Como tesorero/a, quiero revisar, editar o rechazar los borradores de apuntes generados por la importación bancaria, para que solo se registren en la contabilidad de esa entidad los apuntes correctos. | #3 |
 | 5 | Como tesorero/a, quiero consultar las transacciones registradas y los saldos de las cuentas de la entidad y ejercicio seleccionados, para conocer en todo momento la situación financiera de esa entidad. | #2 |
-| 6 | Como administrador/a, quiero controlar el acceso al registro y a la revisión de apuntes mediante roles, para garantizar la separación de responsabilidades dentro de la ONG. | #1 (hecha) |
+| 6 | Como administrador/a, quiero que cada rol determine qué puede hacer en el registro y la revisión de apuntes, para garantizar la separación de responsabilidades dentro de la ONG. | #4, #8 |
+| 7 | Como usuario/a de la ONG, quiero iniciar sesión con mi email y contraseña, para entrar al sistema con el rol que tengo asignado. | — |
+| 8 | Como administrador/a, quiero dar de alta a un usuario con su nombre, email, contraseña inicial y rol, para que esa persona pueda entrar al sistema con los permisos que le correspondan. | #7 |
+
+La #6 cubre dos cosas y se refinará por separado cuando existan la #4 y la #8, sin fijar todavía identificadores nuevos:
+
+- **Permisos por rol en apuntes:** solo lectura no registra ni revisa, tesorería registra pero no revisa, administración hace ambas cosas; se ve en la pantalla y se rechaza en la API.
+- **Separación de responsabilidades:** quien registró un apunte no puede revisarlo.
