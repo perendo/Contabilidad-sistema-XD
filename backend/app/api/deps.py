@@ -53,3 +53,9 @@ def solo_administrador(usuario: Usuario = Depends(usuario_actual)) -> Usuario:
     if usuario.rol.nombre != RolEnum.ADMINISTRADOR:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No autorizado")
     return usuario
+
+
+def solo_tesorero_o_admin(usuario: Usuario = Depends(usuario_actual)) -> Usuario:
+    if usuario.rol.nombre not in (RolEnum.ADMINISTRADOR, RolEnum.TESORERO):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No autorizado")
+    return usuario

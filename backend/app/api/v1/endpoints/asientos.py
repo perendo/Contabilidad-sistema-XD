@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db
+from app.api.deps import get_db, solo_tesorero_o_admin, usuario_actual
 from app.models.asiento import Apunte, Asiento, TipoApunte
 from app.models.usuario import Usuario
 from app.schemas.asiento import AsientoCreate, AsientoRead
@@ -13,14 +13,11 @@ router = APIRouter()
 
 
 @router.post("/", response_model=AsientoRead, status_code=status.HTTP_201_CREATED)
-def crear_asiento(asiento_in: AsientoCreate, db: Session = Depends(get_db)):
-    # Por ahora usamos un usuario de prueba (se reemplazará con auth + roles)
-    usuario = db.query(Usuario).first()
-    if not usuario:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No hay usuarios en la base de datos. Crea un usuario primero.",
-        )
+def crear_asiento(
+    asiento_in: AsientoCreate,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(solo_tesorero_o_admin),
+):
 
     # Obtener siguiente número de asiento por entidad+ejercicio
     max_num = (
