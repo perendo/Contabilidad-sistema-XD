@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance'
+import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import BookIcon from '@mui/icons-material/Book'
 import GroupIcon from '@mui/icons-material/Group'
 import LogoutIcon from '@mui/icons-material/Logout'
@@ -32,6 +33,7 @@ type Seccion = { texto: string; ruta: string; icono: JSX.Element; soloAdmin?: bo
 
 const SECCIONES: Seccion[] = [
   { texto: 'Entidades', ruta: '/entidades', icono: <AccountBalanceIcon /> },
+  { texto: 'Cuadro de cuentas', ruta: '/cuentas-base', icono: <AccountTreeIcon />, soloTesoreroOAdmin: true },
   { texto: 'Diario / Asientos', ruta: '/asientos', icono: <BookIcon />, requiereContexto: true, soloTesoreroOAdmin: true },
   { texto: 'Usuarios', ruta: '/usuarios', icono: <GroupIcon />, soloAdmin: true },
 ]

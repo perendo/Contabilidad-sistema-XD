@@ -3,6 +3,7 @@ import pytest
 from app.core.config import CONTRASENA_ADMIN_DE_FABRICA, settings
 from app.db.seed import sembrar_datos_iniciales
 from app.main import preparar_datos_iniciales
+from app.models.cuenta import Cuenta
 
 
 def test_el_administrador_inicial_puede_entrar_tras_sembrar(db, client):
@@ -52,3 +53,25 @@ def test_con_postgres_y_contrasena_de_fabrica_el_arranque_se_niega(monkeypatch):
 
     with pytest.raises(RuntimeError, match="contraseña de fábrica"):
         preparar_datos_iniciales()
+
+
+def test_el_arranque_siembra_el_cuadro_base_una_sola_vez(fabrica_sesiones):
+    def sembrar_y_leer():
+        sesion = fabrica_sesiones()
+        try:
+            sembrar_datos_iniciales(sesion)
+            return [
+                (cuenta.codigo, cuenta.grupo)
+                for cuenta in sesion.query(Cuenta).filter(Cuenta.entidad_id.is_(None)).all()
+            ]
+        finally:
+            sesion.close()
+
+    primera = sembrar_y_leer()
+    segunda = sembrar_y_leer()
+
+    codigos = {codigo for codigo, _ in primera}
+    assert len(primera) == len(segunda)
+    assert len(codigos) == len(primera)
+    assert {"100", "200", "300", "400", "500", "600", "700", "800", "900"} <= codigos
+    assert all(codigo[0] == grupo for codigo, grupo in primera)

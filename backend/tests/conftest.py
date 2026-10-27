@@ -74,12 +74,26 @@ def crear_usuario(db):
     return _crear
 
 
-@pytest.fixture
-def cliente_admin(client, crear_usuario):
-    crear_usuario(email="admin@rendo.com")
+def _cliente_con_rol(client, crear_usuario, email, rol=RolEnum.ADMINISTRADOR):
+    crear_usuario(email=email, rol=rol)
     login = client.post(
         "/api/v1/auth/login",
-        json={"email": "admin@rendo.com", "password": "Admin67@"},
+        json={"email": email, "password": "Admin67@"},
     )
     client.headers.update({"Authorization": f"Bearer {login.json()['access_token']}"})
     return client
+
+
+@pytest.fixture
+def cliente_admin(client, crear_usuario):
+    return _cliente_con_rol(client, crear_usuario, "admin@rendo.com")
+
+
+@pytest.fixture
+def cliente_tesorero(client, crear_usuario):
+    return _cliente_con_rol(client, crear_usuario, "tesorero@rendo.com", RolEnum.TESORERO)
+
+
+@pytest.fixture
+def cliente_solo_lectura(client, crear_usuario):
+    return _cliente_con_rol(client, crear_usuario, "lectura@rendo.com", RolEnum.SOLO_LECTURA)

@@ -3,6 +3,7 @@ import CircularProgress from '@mui/material/CircularProgress'
 import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import MarcoApp from './components/MarcoApp.tsx'
 import AsientosPage from './pages/AsientosPage.tsx'
+import CuentasBasePage from './pages/CuentasBasePage.tsx'
 import EntidadesPage from './pages/EntidadesPage.tsx'
 import LoginPage from './pages/LoginPage.tsx'
 import UsuariosPage from './pages/UsuariosPage.tsx'
@@ -51,6 +52,7 @@ function App() {
           <Route path="/entidades" element={<EntidadesPage />} />
           <Route element={<RutaTesoreroOAdmin />}>
             <Route path="/asientos" element={<AsientosPage />} />
+            <Route path="/cuentas-base" element={<CuentasBasePage />} />
           </Route>
           <Route element={<RutaSoloAdmin />}>
             <Route path="/usuarios" element={<UsuariosPage />} />
