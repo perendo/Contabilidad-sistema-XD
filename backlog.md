@@ -12,6 +12,7 @@ Los identificadores se mantienen estables respecto al backlog original para no r
 | 5 | Como tesorero/a, quiero consultar las transacciones registradas y los saldos de las cuentas de la entidad y ejercicio seleccionados, para conocer en todo momento la situación financiera de esa entidad. | #2 |
 | 6 | Como administrador/a, quiero que cada rol determine qué puede hacer en el registro y la revisión de apuntes, para garantizar la separación de responsabilidades dentro de la ONG. | #4, #8 |
 | 8 | Como administrador/a, quiero dar de alta a un usuario con su nombre, email, contraseña inicial y rol, para que esa persona pueda entrar al sistema con los permisos que le correspondan. | #7 (hecha) |
+| 9 | Como administrador/a, quiero que el alta de usuario me avise cuando el email ya está en uso o la contraseña es demasiado corta, para no crear cuentas repetidas ni débiles. | #8 |
 
 La #6 cubre dos cosas y se refinará por separado cuando existan la #4 y la #8, sin fijar todavía identificadores nuevos:
 

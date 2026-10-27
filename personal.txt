@@ -1,0 +1,4 @@
+Resumen para cuando retomemos:
+- Hecho y publicado: #7 cerrada (login, sesión, marco con menú, sembrado del administrador inicial).
+- Refinado y en el backlog: #8 y #9, con la #8 lista para construir.
+- Siguiente arranque: /pair sobre la #8, empezando por la lista de tests y por el agujero de seguridad de POST /usuarios.

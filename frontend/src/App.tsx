@@ -4,6 +4,7 @@ import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import MarcoApp from './components/MarcoApp.tsx'
 import EntidadesPage from './pages/EntidadesPage.tsx'
 import LoginPage from './pages/LoginPage.tsx'
+import UsuariosPage from './pages/UsuariosPage.tsx'
 import { useSesion } from './sesion.tsx'
 
 function RutaPrivada() {
@@ -24,6 +25,14 @@ function RutaPrivada() {
   return <Outlet />
 }
 
+function RutaSoloAdmin() {
+  const { usuario } = useSesion()
+  if (usuario?.rol.nombre !== 'administrador') {
+    return <Navigate to="/entidades" replace />
+  }
+  return <Outlet />
+}
+
 function App() {
   return (
     <Routes>
@@ -31,6 +40,9 @@ function App() {
       <Route element={<RutaPrivada />}>
         <Route element={<MarcoApp />}>
           <Route path="/entidades" element={<EntidadesPage />} />
+          <Route element={<RutaSoloAdmin />}>
+            <Route path="/usuarios" element={<UsuariosPage />} />
+          </Route>
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/entidades" replace />} />

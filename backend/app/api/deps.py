@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.security import email_del_token
 from app.db.session import SessionLocal
-from app.models.usuario import Usuario
+from app.models.usuario import RolEnum, Usuario
 
 esquema_bearer = HTTPBearer(auto_error=False)
 
@@ -46,4 +46,10 @@ def usuario_actual(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    return usuario
+
+
+def solo_administrador(usuario: Usuario = Depends(usuario_actual)) -> Usuario:
+    if usuario.rol.nombre != RolEnum.ADMINISTRADOR:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No autorizado")
     return usuario

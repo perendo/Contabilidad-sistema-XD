@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance'
+import GroupIcon from '@mui/icons-material/Group'
 import LogoutIcon from '@mui/icons-material/Logout'
 import MenuIcon from '@mui/icons-material/Menu'
 import AppBar from '@mui/material/AppBar'
@@ -22,8 +23,12 @@ import { NOMBRES_ROL, useSesion } from '../sesion.tsx'
 
 const ANCHO_MENU = 240
 
-// Aquí se irán añadiendo las secciones de las próximas historias.
-const SECCIONES = [{ texto: 'Entidades', ruta: '/entidades', icono: <AccountBalanceIcon /> }]
+type Seccion = { texto: string; ruta: string; icono: JSX.Element; soloAdmin?: boolean }
+
+const SECCIONES: Seccion[] = [
+  { texto: 'Entidades', ruta: '/entidades', icono: <AccountBalanceIcon /> },
+  { texto: 'Usuarios', ruta: '/usuarios', icono: <GroupIcon />, soloAdmin: true },
+]
 
 function MarcoApp() {
   const { usuario, cerrarSesion } = useSesion()
@@ -38,12 +43,17 @@ function MarcoApp() {
     setMenuAbierto(false)
   }
 
+  const seccionesVisibles = SECCIONES.filter((seccion) => {
+    if (!seccion.soloAdmin) return true
+    return usuario?.rol.nombre === 'administrador'
+  })
+
   const menu = (
     <>
       <Toolbar />
       <Divider />
       <List>
-        {SECCIONES.map((seccion) => (
+        {seccionesVisibles.map((seccion) => (
           <ListItemButton
             key={seccion.ruta}
             selected={ubicacion.pathname.startsWith(seccion.ruta)}

@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db
+from app.api.deps import get_db, solo_administrador
+from app.core.security import hash_password
 from app.models.usuario import Rol, RolEnum, Usuario
 from app.schemas.usuario import RolRead, UsuarioCreate, UsuarioRead
 
@@ -29,17 +30,16 @@ def seed_roles(db: Session = Depends(get_db)):
     return db.query(Rol).all()
 
 
-@router.post("/", response_model=UsuarioRead, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=UsuarioRead, status_code=status.HTTP_201_CREATED, dependencies=[Depends(solo_administrador)])
 def crear_usuario(usuario_in: UsuarioCreate, db: Session = Depends(get_db)):
     existe = db.query(Usuario).filter(Usuario.email == usuario_in.email).first()
     if existe:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ya existe un usuario con ese email")
 
-    # Por simplicidad guardamos la contraseña tal como viene (se reemplazará con hash)
     db_usuario = Usuario(
         email=usuario_in.email,
         nombre_completo=usuario_in.nombre_completo,
-        hashed_password=usuario_in.password,
+        hashed_password=hash_password(usuario_in.password),
         rol_id=usuario_in.rol_id,
     )
     db.add(db_usuario)
@@ -48,7 +48,7 @@ def crear_usuario(usuario_in: UsuarioCreate, db: Session = Depends(get_db)):
     return db_usuario
 
 
-@router.get("/", response_model=list[UsuarioRead])
+@router.get("/", response_model=list[UsuarioRead], dependencies=[Depends(solo_administrador)])
 def listar_usuarios(db: Session = Depends(get_db)):
     usuarios = db.query(Usuario).all()
     return usuarios
