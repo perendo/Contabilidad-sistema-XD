@@ -2,11 +2,11 @@
 Como tesorero/a, quiero registrar una transacción equilibrada de ingresos o gastos con partida doble en la entidad y ejercicio seleccionados, para llevar al día los libros contables de esa entidad.
 
 ## Criterios de aceptación
-- [ ] Dado que estoy autenticado y he seleccionado una entidad y un ejercicio en el selector global de la cabecera, cuando accedo al diario o a la página de asientos, entonces el sistema habilita las operaciones contables para ese contexto.
-- [ ] Dado que estoy autenticado como tesorero/a (o administrador/a) y tengo una entidad y un ejercicio seleccionados, cuando creo un asiento con al menos dos apuntes (debe/haber) que sumen el mismo importe, entonces el sistema lo crea y le asigna un número de asiento secuencial por entidad y ejercicio.
-- [ ] Dado que el asiento no está cuadrado (debe != haber), tiene menos de dos apuntes o algún importe es 0 o negativo, cuando intento crearlo, entonces el sistema lo rechaza con un error y no crea el asiento.
-- [ ] Dado que estoy autenticado como solo lectura, cuando intento crear un asiento, entonces el sistema deniega el acceso (403).
-- [ ] Dado que no hay una entidad o un ejercicio seleccionados, cuando intento acceder al diario o a la creación de asientos, entonces el sistema impide la acción y me solicita que seleccione una entidad y un ejercicio desde el selector global de la cabecera.
+- [x] Dado que estoy autenticado y he seleccionado una entidad y un ejercicio en el selector global de la cabecera, cuando accedo al diario o a la página de asientos, entonces el sistema habilita las operaciones contables para ese contexto.
+- [x] Dado que estoy autenticado como tesorero/a (o administrador/a) y tengo una entidad y un ejercicio seleccionados, cuando creo un asiento con al menos dos apuntes (debe/haber) que sumen el mismo importe, entonces el sistema lo crea y le asigna un número de asiento secuencial por entidad y ejercicio.
+- [x] Dado que el asiento no está cuadrado (debe != haber), tiene menos de dos apuntes o algún importe es 0 o negativo, cuando intento crearlo, entonces el sistema lo rechaza con un error y no crea el asiento.
+- [x] Dado que estoy autenticado como solo lectura, cuando intento crear un asiento, entonces el sistema deniega el acceso (403).
+- [x] Dado que no hay una entidad o un ejercicio seleccionados, cuando intento acceder al diario o a la creación de asientos, entonces el sistema impide la acción y me solicita que seleccione una entidad y un ejercicio desde el selector global de la cabecera.
 
 ## Plan
 - **Contexto global (entidad + ejercicio):** Añadir un selector de entidad y ejercicio en la cabecera de `MarcoApp` tras el inicio de sesión. Este selector cargará los ejercicios correspondientes al cambiar de entidad, persistirá la selección en `sessionStorage` (o en el contexto de sesión de `sesion.tsx`), se preseleccionará automáticamente si solo existe una opción y limpiará su valor al cerrar sesión. 
@@ -27,3 +27,6 @@ Como tesorero/a, quiero registrar una transacción equilibrada de ingresos o gas
 - **Protección reutilizable:** Crear un componente o guarda como `RequiereContextoContable` para evitar duplicar lógica en todas las rutas contables.
 - **Reutilizar patrones existentes:** Seguir el estilo de `EntidadesPage` para los formularios y tablas con MUI, así como las comprobaciones de roles con `useSesion`. 
 - **Validación cruzada:** Asegurarse de que, al cargar o cambiar de entidad, el ejercicio seleccionado siga siendo válido para esta. En caso contrario, seleccionar uno por defecto o limpiar la selección.
+
+## Resultado
+Cerrada el 2026-10-27. El registro equilibrado, la numeración secuencial por entidad/ejercicio, el rechazo de asientos inválidos y el 403 para solo lectura están cubiertos por `backend/tests/test_asientos_permisos.py`. El contexto global y el formulario están en `MarcoApp` y `AsientosPage`.
