@@ -1,4 +1,5 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func
@@ -56,7 +57,7 @@ def crear_asiento(
 
 
 @router.get("/", response_model=list[AsientoRead])
-def listar_asientos(entidad_id: str, ejercicio_id: str, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+def listar_asientos(entidad_id: UUID, ejercicio_id: UUID, skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     asientos = (
         db.query(Asiento)
         .filter(Asiento.entidad_id == entidad_id, Asiento.ejercicio_id == ejercicio_id)

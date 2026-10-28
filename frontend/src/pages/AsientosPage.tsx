@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -68,29 +68,69 @@ function AsientosPage() {
     { cuenta_id: '', tipo: 'haber', importe: '' },
   ])
   const [error, setError] = useState('')
+  const [errorListado, setErrorListado] = useState('')
+  const [exito, setExito] = useState('')
   const [guardando, setGuardando] = useState(false)
 
-  const cargarCuentas = useCallback(async () => {
-    if (!entidadSeleccionadaId) return
-    const { data } = await cliente.get<Cuenta[]>('/cuentas', { params: { entidad_id: entidadSeleccionadaId } })
-    setCuentas(data)
-  }, [entidadSeleccionadaId])
+  const contextoActual = useRef({ entidadId: entidadSeleccionadaId, ejercicioId: ejercicioSeleccionadoId })
+  const generacionCuentas = useRef(0)
+  const generacionAsientos = useRef(0)
 
-  const cargarAsientos = useCallback(async () => {
-    if (!entidadSeleccionadaId || !ejercicioSeleccionadoId) return
-    const { data } = await cliente.get<Asiento[]>('/asientos', {
-      params: { entidad_id: entidadSeleccionadaId, ejercicio_id: ejercicioSeleccionadoId },
-    })
-    setAsientos(data)
+  useEffect(() => {
+    contextoActual.current = { entidadId: entidadSeleccionadaId, ejercicioId: ejercicioSeleccionadoId }
   }, [entidadSeleccionadaId, ejercicioSeleccionadoId])
 
-  useEffect(() => {
-    cargarCuentas().catch(() => undefined)
-  }, [cargarCuentas])
+  const cargarCuentas = useCallback(async () => {
+    const { entidadId } = contextoActual.current
+    if (!entidadId) return
+    const generacion = ++generacionCuentas.current
+    try {
+      const { data } = await cliente.get<Cuenta[]>('/cuentas', { params: { entidad_id: entidadId } })
+      if (generacion !== generacionCuentas.current || contextoActual.current.entidadId !== entidadId) return
+      setCuentas(data)
+    } catch {
+      if (generacion === generacionCuentas.current) setCuentas([])
+    }
+  }, [])
+
+  const cargarAsientos = useCallback(async () => {
+    const { entidadId, ejercicioId } = contextoActual.current
+    if (!entidadId || !ejercicioId) return
+    const generacion = ++generacionAsientos.current
+    try {
+      const { data } = await cliente.get<Asiento[]>('/asientos', {
+        params: { entidad_id: entidadId, ejercicio_id: ejercicioId },
+      })
+      if (
+        generacion !== generacionAsientos.current ||
+        contextoActual.current.entidadId !== entidadId ||
+        contextoActual.current.ejercicioId !== ejercicioId
+      ) {
+        return
+      }
+      setAsientos(data)
+      setErrorListado('')
+    } catch {
+      if (generacion === generacionAsientos.current) setErrorListado('No se pudo cargar el listado de asientos')
+    }
+  }, [])
 
   useEffect(() => {
-    cargarAsientos().catch(() => setError('No se pudo cargar el listado de asientos'))
-  }, [cargarAsientos])
+    setCuentas([])
+    void cargarCuentas()
+  }, [entidadSeleccionadaId, cargarCuentas])
+
+  useEffect(() => {
+    setAsientos([])
+    setApuntes([
+      { cuenta_id: '', tipo: 'debe', importe: '' },
+      { cuenta_id: '', tipo: 'haber', importe: '' },
+    ])
+    setError('')
+    setErrorListado('')
+    setExito('')
+    void cargarAsientos()
+  }, [entidadSeleccionadaId, ejercicioSeleccionadoId, cargarAsientos])
 
   const puedeCrear = usuario?.rol.nombre === 'administrador' || usuario?.rol.nombre === 'tesorero'
 
@@ -118,6 +158,7 @@ function AsientosPage() {
       return
     }
     setError('')
+    setExito('')
     setGuardando(true)
     try {
       const payload = {
@@ -137,6 +178,7 @@ function AsientosPage() {
         { cuenta_id: '', tipo: 'debe', importe: '' },
         { cuenta_id: '', tipo: 'haber', importe: '' },
       ])
+      setExito('Asiento guardado correctamente')
       await cargarAsientos()
     } catch (fallo) {
       const detalle = axios.isAxiosError(fallo) ? fallo.response?.data?.detail : undefined
@@ -205,6 +247,7 @@ function AsientosPage() {
               Añadir apunte
             </Button>
             {error && <Alert severity="error">{error}</Alert>}
+            {exito && <Alert severity="success">{exito}</Alert>}
             <Button type="submit" variant="contained" disabled={guardando}>
               Guardar asiento
             </Button>
@@ -216,7 +259,12 @@ function AsientosPage() {
         <Typography variant="h5" component="h2" gutterBottom>
           Asientos registrados
         </Typography>
-        {asientos.length === 0 ? (
+        {errorListado && (
+          <Alert severity="error" sx={{ mt: 2 }}>
+            {errorListado}
+          </Alert>
+        )}
+        {errorListado ? null : asientos.length === 0 ? (
           <Typography color="text.secondary">No hay asientos registrados en este contexto.</Typography>
         ) : (
           <TableContainer>

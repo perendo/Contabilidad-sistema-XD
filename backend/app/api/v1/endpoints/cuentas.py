@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from uuid import UUID
 
 from app.api.deps import get_db, solo_tesorero_o_admin, usuario_actual
 from app.models.cuenta import Cuenta
@@ -50,10 +51,16 @@ def crear_cuenta(
 
 
 @router.get("/", response_model=list[CuentaRead])
-def listar_cuentas(entidad_id: str, db: Session = Depends(get_db)):
-    cuentas = db.query(Cuenta).filter(Cuenta.entidad_id == entidad_id, Cuenta.activa == True).order_by(Cuenta.codigo).all()
-    return cuentas
-
+def listar_cuentas(entidad_id: UUID, db: Session = Depends(get_db)):
+    return (
+        db.query(Cuenta)
+        .filter(
+            Cuenta.activa == True,
+            (Cuenta.entidad_id.is_(None)) | (Cuenta.entidad_id == entidad_id),
+        )
+        .order_by(Cuenta.codigo)
+        .all()
+    )
 
 
 @router.get("/base", response_model=list[CuentaRead])
