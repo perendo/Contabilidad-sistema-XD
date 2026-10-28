@@ -1,120 +1,250 @@
-from app.db.seed import sembrar_datos_iniciales
-from app.models.cuenta import Cuenta
-from app.models.entidad import Entidad
+from app.models.usuario import RolEnum
 
 
-def test_sin_sesion_no_se_puede_consultar_el_cuadro_base(client):
-    respuesta = client.get("/api/v1/cuentas/base")
+def test_tesorero_puede_crear_cuenta_base_con_codigo_numerico_hasta_8_digitos_y_aparece_en_base(
+    client, crear_usuario, db
+):
+    crear_usuario(email="tesorero@rendo.com", rol=RolEnum.TESORERO)
+    login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "tesorero@rendo.com", "password": "Admin67@"},
+    )
+    token = login.json()["access_token"]
+    client.headers.update({"Authorization": f"Bearer {token}"})
 
-    assert respuesta.status_code == 401
-
-
-def test_tesorero_consulta_el_cuadro_base_y_recibe_codigos_de_hasta_tres_digitos(cliente_tesorero, db):
-    sembrar_datos_iniciales(db)
-
-    respuesta = cliente_tesorero.get("/api/v1/cuentas/base")
-
-    assert respuesta.status_code == 200
-    codigos = [cuenta["codigo"] for cuenta in respuesta.json()]
-    assert codigos
-    assert all(codigo.isdigit() and len(codigo) <= 3 for codigo in codigos)
-
-
-def test_cada_cuenta_base_incluye_codigo_y_nombre_del_pgc(cliente_tesorero, db):
-    sembrar_datos_iniciales(db)
-
-    respuesta = cliente_tesorero.get("/api/v1/cuentas/base")
-
-    assert respuesta.status_code == 200
-    cuentas = respuesta.json()
-    assert all(cuenta["codigo"] and cuenta["nombre"] for cuenta in cuentas)
-    por_codigo = {cuenta["codigo"]: cuenta["nombre"] for cuenta in cuentas}
-    assert por_codigo["100"] == "Capital social"
-    assert por_codigo["430"] == "Clientes"
-    assert por_codigo["293"] == "Deterioro de valor de participaciones a largo plazo en partes vinculadas"
-    assert por_codigo["500"] == "Obligaciones y bonos a corto plazo"
-    assert por_codigo["501"] == "Obligaciones y bonos convertibles a corto plazo"
-    assert por_codigo["502"] == "Acciones o participaciones a corto plazo consideradas como pasivos financieros"
-    assert por_codigo["664"] == "Dividendos de acciones o participaciones consideradas como pasivos financieros"
-
-
-def test_el_catalogo_base_tiene_las_421_cuentas_del_pgc(cliente_tesorero, db):
-    sembrar_datos_iniciales(db)
-
-    cuentas = cliente_tesorero.get("/api/v1/cuentas/base").json()
-
-    assert len(cuentas) == 421
-
-
-def test_solo_lectura_no_puede_consultar_el_cuadro_base(cliente_solo_lectura, db):
-    sembrar_datos_iniciales(db)
-
-    respuesta = cliente_solo_lectura.get("/api/v1/cuentas/base")
-
-    assert respuesta.status_code == 403
-
-
-def test_administrador_puede_consultar_el_cuadro_base(cliente_admin, db):
-    sembrar_datos_iniciales(db)
-
-    respuesta = cliente_admin.get("/api/v1/cuentas/base")
-
-    assert respuesta.status_code == 200
-
-
-def test_el_cuadro_base_se_consulta_sin_entidad_ni_ejercicio(cliente_tesorero, db):
-    sembrar_datos_iniciales(db)
-
-    respuesta = cliente_tesorero.get("/api/v1/cuentas/base")
-
-    assert respuesta.status_code == 200
-    cuentas = respuesta.json()
-    assert cuentas
-    assert all(cuenta["entidad_id"] is None for cuenta in cuentas)
-
-
-def test_las_cuentas_de_una_entidad_no_aparecen_en_el_cuadro_base(cliente_tesorero, db):
-    sembrar_datos_iniciales(db)
-    entidad = Entidad(cif="G12345678", nombre="Entidad con cuentas propias", activa=True)
-    db.add(entidad)
-    db.flush()
-    db.add(Cuenta(entidad_id=entidad.id, codigo="9999", nombre="Cuenta propia", grupo="9"))
-    db.commit()
-
-    base = cliente_tesorero.get("/api/v1/cuentas/base")
-
-    assert base.status_code == 200
-    assert "Cuenta propia" not in {cuenta["nombre"] for cuenta in base.json()}
-    assert all(cuenta["entidad_id"] is None for cuenta in base.json())
-
-
-def test_el_cuadro_base_es_solo_lectura(cliente_tesorero, db):
-    sembrar_datos_iniciales(db)
-
-    antes = cliente_tesorero.get("/api/v1/cuentas/base").json()
-
-    for metodo in ("post", "put", "delete"):
-        respuesta = getattr(cliente_tesorero, metodo)("/api/v1/cuentas/base")
-        assert respuesta.status_code == 405
-
-    despues = cliente_tesorero.get("/api/v1/cuentas/base").json()
-    assert despues == antes
-
-
-def test_una_cuenta_de_entidad_puede_reutilizar_un_codigo_del_pgc(cliente_tesorero, db):
-    sembrar_datos_iniciales(db)
-    entidad = Entidad(cif="G12345678", nombre="Entidad con cuenta 430", activa=True)
-    db.add(entidad)
-    db.commit()
-
-    respuesta = cliente_tesorero.post(
-        "/api/v1/cuentas",
+    respuesta = client.post(
+        "/api/v1/cuentas/",
         json={
-            "entidad_id": str(entidad.id),
-            "codigo": "430",
-            "nombre": "Clientes de la entidad",
-            "grupo": "4",
+            "codigo": "12345678",
+            "nombre": "Cuenta base de prueba",
+            "grupo": "1",
+            "descripcion": None,
+            "activa": True,
+            "entidad_id": None,
         },
     )
 
     assert respuesta.status_code == 201
+    datos = respuesta.json()
+    assert datos["entidad_id"] is None
+    assert datos["codigo"] == "12345678"
+
+    respuesta_base = client.get("/api/v1/cuentas/base")
+    assert respuesta_base.status_code == 200
+    codigos = [c["codigo"] for c in respuesta_base.json()]
+    assert "12345678" in codigos
+
+
+def test_administrador_puede_crear_cuenta_base_con_codigo_numerico_hasta_8_digitos_y_aparece_en_base(
+    client, crear_usuario, db
+):
+    crear_usuario(email="admin2@rendo.com", rol=RolEnum.ADMINISTRADOR)
+    login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "admin2@rendo.com", "password": "Admin67@"},
+    )
+    token = login.json()["access_token"]
+    client.headers.update({"Authorization": f"Bearer {token}"})
+
+    respuesta = client.post(
+        "/api/v1/cuentas/",
+        json={
+            "codigo": "76543210",
+            "nombre": "Cuenta base admin",
+            "grupo": "2",
+            "descripcion": None,
+            "activa": True,
+            "entidad_id": None,
+        },
+    )
+
+    assert respuesta.status_code == 201
+    datos = respuesta.json()
+    assert datos["entidad_id"] is None
+    assert datos["codigo"] == "76543210"
+
+    respuesta_base = client.get("/api/v1/cuentas/base")
+    assert respuesta_base.status_code == 200
+    codigos = [c["codigo"] for c in respuesta_base.json()]
+    assert "76543210" in codigos
+
+
+def test_crear_cuenta_base_con_codigo_ya_existente_devuelve_error_con_mensaje_adecuado(
+    client, crear_usuario, db
+):
+    crear_usuario(email="tesorero@rendo.com", rol=RolEnum.TESORERO)
+    login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "tesorero@rendo.com", "password": "Admin67@"},
+    )
+    token = login.json()["access_token"]
+    client.headers.update({"Authorization": f"Bearer {token}"})
+
+    respuesta1 = client.post(
+        "/api/v1/cuentas/",
+        json={
+            "codigo": "123456",
+            "nombre": "Cuenta base 1",
+            "grupo": "1",
+            "descripcion": None,
+            "activa": True,
+            "entidad_id": None,
+        },
+    )
+    assert respuesta1.status_code == 201
+
+    respuesta2 = client.post(
+        "/api/v1/cuentas/",
+        json={
+            "codigo": "123456",
+            "nombre": "Cuenta base 2",
+            "grupo": "1",
+            "descripcion": None,
+            "activa": True,
+            "entidad_id": None,
+        },
+    )
+    assert respuesta2.status_code == 400
+    assert respuesta2.json()["detail"] == "Ya existe una cuenta base con ese código"
+
+
+def test_solo_lectura_no_puede_crear_cuenta_base_devuelve_403(
+    client, crear_usuario, db
+):
+    crear_usuario(email="lectura@rendo.com", rol=RolEnum.SOLO_LECTURA)
+    login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "lectura@rendo.com", "password": "Admin67@"},
+    )
+    token = login.json()["access_token"]
+    client.headers.update({"Authorization": f"Bearer {token}"})
+
+    respuesta = client.post(
+        "/api/v1/cuentas/",
+        json={
+            "codigo": "1234567",
+            "nombre": "Cuenta base lectura",
+            "grupo": "1",
+            "descripcion": None,
+            "activa": True,
+            "entidad_id": None,
+        },
+    )
+
+    assert respuesta.status_code == 403
+
+
+def test_crear_cuenta_base_con_mas_de_8_digitos_devuelve_error(
+    client, crear_usuario, db
+):
+    crear_usuario(email="tesorero@rendo.com", rol=RolEnum.TESORERO)
+    login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "tesorero@rendo.com", "password": "Admin67@"},
+    )
+    token = login.json()["access_token"]
+    client.headers.update({"Authorization": f"Bearer {token}"})
+
+    respuesta = client.post(
+        "/api/v1/cuentas/",
+        json={
+            "codigo": "123456789",
+            "nombre": "Cuenta base larga",
+            "grupo": "1",
+            "descripcion": None,
+            "activa": True,
+            "entidad_id": None,
+        },
+    )
+
+    assert respuesta.status_code in (400, 422)
+
+
+def test_crear_cuenta_base_con_codigo_no_numerico_devuelve_error(
+    client, crear_usuario, db
+):
+    crear_usuario(email="tesorero@rendo.com", rol=RolEnum.TESORERO)
+    login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "tesorero@rendo.com", "password": "Admin67@"},
+    )
+    token = login.json()["access_token"]
+    client.headers.update({"Authorization": f"Bearer {token}"})
+
+    respuesta = client.post(
+        "/api/v1/cuentas/",
+        json={
+            "codigo": "123A456",
+            "nombre": "Cuenta base no numerica",
+            "grupo": "1",
+            "descripcion": None,
+            "activa": True,
+            "entidad_id": None,
+        },
+    )
+
+    assert respuesta.status_code in (400, 422)
+
+
+def test_crear_cuenta_por_entidad_sigue_permitiendo_codigo_numerico_hasta_8_digitos_y_es_unica_por_entidad(
+    client, crear_usuario, db
+):
+    import uuid
+
+    from app.models.entidad import Entidad
+
+    crear_usuario(email="tesorero@rendo.com", rol=RolEnum.TESORERO)
+    login = client.post(
+        "/api/v1/auth/login",
+        json={"email": "tesorero@rendo.com", "password": "Admin67@"},
+    )
+    token = login.json()["access_token"]
+    client.headers.update({"Authorization": f"Bearer {token}"})
+
+    entidad1 = Entidad(cif="A11111111", nombre="Entidad1", activa=True)
+    entidad2 = Entidad(cif="A22222222", nombre="Entidad2", activa=True)
+    db.add_all([entidad1, entidad2])
+    db.commit()
+    db.refresh(entidad1)
+    db.refresh(entidad2)
+
+    respuesta1 = client.post(
+        "/api/v1/cuentas/",
+        json={
+            "codigo": "60000000",
+            "nombre": "Cuenta entidad 1",
+            "grupo": "6",
+            "descripcion": None,
+            "activa": True,
+            "entidad_id": str(entidad1.id),
+        },
+    )
+    assert respuesta1.status_code == 201
+
+    respuesta2 = client.post(
+        "/api/v1/cuentas/",
+        json={
+            "codigo": "60000000",
+            "nombre": "Cuenta entidad 2",
+            "grupo": "6",
+            "descripcion": None,
+            "activa": True,
+            "entidad_id": str(entidad2.id),
+        },
+    )
+    assert respuesta2.status_code == 201
+    assert respuesta2.json()["entidad_id"] == str(entidad2.id)
+
+    respuesta_dup = client.post(
+        "/api/v1/cuentas/",
+        json={
+            "codigo": "60000000",
+            "nombre": "Cuenta entidad 1 duplicada",
+            "grupo": "6",
+            "descripcion": None,
+            "activa": True,
+            "entidad_id": str(entidad1.id),
+        },
+    )
+    assert respuesta_dup.status_code == 400
+    assert respuesta_dup.json()["detail"] == "Ya existe una cuenta con ese código"

@@ -12,8 +12,7 @@ Los identificadores se mantienen estables respecto al backlog original para no r
 | 6 | Como administrador/a, quiero que cada rol determine qué puede hacer en el registro y la revisión de apuntes, para garantizar la separación de responsabilidades dentro de la ONG. | #4, #8 |
 | 8 | Como administrador/a, quiero dar de alta a un usuario con su nombre, email, contraseña inicial y rol, para que esa persona pueda entrar al sistema con los permisos que le correspondan. | #7 (hecha) |
 | 9 | Como administrador/a, quiero que el alta de usuario me avise cuando el email ya está en uso o la contraseña es demasiado corta, para no crear cuentas repetidas ni débiles. | #8 |
-| 11 | Como tesorero/a, quiero dar de alta una nueva cuenta hasta 8 dígitos en el cuadro de cuentas base compartido, para ampliarlo con las cuentas que necesito para mis operaciones. | #10 (hecha) |
-| 12 | Como tesorero/a, quiero poder utilizar las cuentas dadas de alta en el cuadro de cuentas base compartido al registrar movimientos, para usarlas inmediatamente en cualquier entidad. | #11 |
+| 12 | Como tesorero/a, quiero poder utilizar las cuentas dadas de alta en el cuadro de cuentas base compartido al registrar movimientos, para usarlas inmediatamente en cualquier entidad. | #11 (hecha) |
 | 13 | Como tesorero/a, quiero que las cuentas de una entidad se carguen sin errores al registrar un asiento, para poder elegir la cuenta contable. | |
 
 La #6 cubre dos cosas y se refinará por separado cuando existan la #4 y la #8, sin fijar todavía identificadores nuevos:

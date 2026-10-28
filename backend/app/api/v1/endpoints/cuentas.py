@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, solo_tesorero_o_admin
+from app.api.deps import get_db, solo_tesorero_o_admin, usuario_actual
 from app.models.cuenta import Cuenta
 from app.models.usuario import Usuario
 from app.schemas.cuenta import CuentaCreate, CuentaRead
@@ -10,7 +10,30 @@ router = APIRouter()
 
 
 @router.post("/", response_model=CuentaRead, status_code=status.HTTP_201_CREATED)
-def crear_cuenta(cuenta_in: CuentaCreate, db: Session = Depends(get_db)):
+def crear_cuenta(
+    cuenta_in: CuentaCreate,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(usuario_actual),
+):
+    if cuenta_in.entidad_id is None:
+        if not usuario.rol or usuario.rol.nombre not in ("administrador", "tesorero"):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No autorizado")
+        existe = (
+            db.query(Cuenta)
+            .filter(Cuenta.entidad_id.is_(None), Cuenta.codigo == cuenta_in.codigo)
+            .first()
+        )
+        if existe:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Ya existe una cuenta base con ese código",
+            )
+        db_cuenta = Cuenta(**cuenta_in.model_dump())
+        db.add(db_cuenta)
+        db.commit()
+        db.refresh(db_cuenta)
+        return db_cuenta
+
     existe = (
         db.query(Cuenta)
         .filter(Cuenta.entidad_id == cuenta_in.entidad_id, Cuenta.codigo == cuenta_in.codigo)
