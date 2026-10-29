@@ -63,5 +63,8 @@ npm run dev
 
 Frontend: http://localhost:5173
 
+### Documentos adjuntos
+Los justificantes del libro diario se guardan en `backend/data/<CIF de la entidad>/<año del ejercicio>/`, con nombres generados y sin caracteres del usuario. La raíz se puede cambiar con `DIRECTORIO_DATOS` en `backend/.env`; la carpeta no se versiona.
+
 ## Backlog
 Ver `AGENTS.md`

@@ -5,6 +5,11 @@ backend/.env
 # Base de datos local (se recrea con `alembic upgrade head`)
 backend/*.db
 
+# Documentos subidos en desarrollo (backend/data es la ubicación actual;
+# backend/documentos guarda los subidos antes de la historia #14)
+backend/data/
+backend/documentos/
+
 # Python
 backend/.venv/
 __pycache__/

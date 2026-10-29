@@ -1,3 +1,6 @@
+import pytest
+
+
 def test_crea_entidad_con_su_ejercicio_del_anio_indicado(cliente_admin):
     respuesta = cliente_admin.post(
         "/api/v1/entidades",
@@ -22,3 +25,13 @@ def test_rechaza_un_cif_ya_registrado_sin_crear_nada(cliente_admin):
     assert segunda.status_code == 409
     entidades = cliente_admin.get("/api/v1/entidades").json()
     assert [(e["cif"], len(e["ejercicios"])) for e in entidades] == [("G12345678", 1)]
+
+
+@pytest.mark.parametrize("cif", ["", " ", "..", "../fuera", "A/B", "A B"])
+def test_rechaza_un_cif_que_no_sirve_como_carpeta(cliente_admin, cif):
+    respuesta = cliente_admin.post(
+        "/api/v1/entidades",
+        json={"cif": cif, "nombre": "Entidad inválida", "anio": 2026},
+    )
+
+    assert respuesta.status_code == 422

@@ -11,6 +11,9 @@ Los identificadores se mantienen estables respecto al backlog original para no r
 | 5 | Como tesorero/a, quiero consultar las transacciones registradas y los saldos de las cuentas de la entidad y ejercicio seleccionados, para conocer en todo momento la situación financiera de esa entidad. | #2 (hecha) |
 | 6 | Como administrador/a, quiero que cada rol determine qué puede hacer en el registro y la revisión de apuntes, para garantizar la separación de responsabilidades dentro de la ONG. | #4, #8 (hecha) |
 | 9 | Como administrador/a, quiero que el alta de usuario me avise cuando el email ya está en uso o la contraseña es demasiado corta, para no crear cuentas repetidas ni débiles. | #8 (hecha) |
+| 14 | Como tesorero/a, quiero adjuntar uno o varios documentos PDF, JPG o PNG de hasta 10 MB al registrar un asiento o a un asiento ya registrado, y poder consultarlos y descargarlos después desde ese asiento, para que el libro diario conserve la factura o el recibo que justifica cada apunte. | #2 (hecha) |
+| 16 | Como tesorero/a, quiero eliminar un documento adjunto equivocado y subir el correcto, para que el asiento no quede con documentación errónea. | #14 |
+| 17 | Como administrador/a, quiero que la matriz de permisos por rol se aplique de forma completa en todos los módulos, incluido el acceso de solo lectura al libro diario y a sus documentos, para que cada perfil vea y haga exactamente lo que le corresponde. | #14 |
 
 La #6 cubre dos cosas y se refinará por separado cuando exista la #4 (la #8 ya está hecha), sin fijar todavía identificadores nuevos:
 

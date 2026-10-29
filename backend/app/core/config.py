@@ -1,8 +1,10 @@
 import os
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 CONTRASENA_ADMIN_DE_FABRICA = "Admin67@"
+BASE_DIR = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
@@ -26,6 +28,10 @@ class Settings(BaseSettings):
     # contraseña de fábrica.
     ADMIN_INICIAL_EMAIL: str = "admin@ong.org"
     ADMIN_INICIAL_PASSWORD: str = CONTRASENA_ADMIN_DE_FABRICA
+
+    # Raíz donde se guardan los documentos adjuntos, organizados por entidad y
+    # ejercicio. En base de datos se guarda la ruta relativa a este directorio.
+    DIRECTORIO_DATOS: Path = BASE_DIR / "data"
 
     @property
     def DATABASE_URL(self) -> str:

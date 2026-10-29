@@ -26,6 +26,16 @@ class ApunteRead(BaseModel):
     importe: Decimal
 
 
+class DocumentoRead(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    nombre: str
+    tipo_contenido: str
+    tamano: int
+    creado_en: datetime
+
+
 class AsientoCreate(BaseModel):
     entidad_id: uuid.UUID
     ejercicio_id: uuid.UUID
@@ -64,4 +74,5 @@ class AsientoRead(BaseModel):
     creado_en: datetime
     modificado_en: datetime
     apuntes: list[ApunteRead]
+    documentos: list[DocumentoRead] = Field(default_factory=list)
 

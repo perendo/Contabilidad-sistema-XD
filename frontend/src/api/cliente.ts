@@ -5,7 +5,7 @@ export const EVENTO_SESION_CADUCADA = 'sesion-caducada'
 
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1'
 
-export const cliente = axios.create({ baseURL: API_URL })
+export const cliente = axios.create({ baseURL: API_URL, timeout: 120_000 })
 
 cliente.interceptors.request.use((configuracion) => {
   const token = sessionStorage.getItem(CLAVE_SESION)

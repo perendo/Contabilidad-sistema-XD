@@ -1,5 +1,5 @@
 ## Contexto
-Sistema contable para una ONG para registrar transacciones de ingresos y gastos con partida doble conforme a la normativa española y al PGC, con la posibilidad de importar movimientos bancarios generando borradores de apuntes pendientes de revisión. Gestiona entidades con CIF distinto, con libros contables separados y ejercicios contables propios.
+Sistema contable para una ONG para registrar transacciones de ingresos y gastos con partida doble conforme a la normativa española y al PGC, con la posibilidad de importar movimientos bancarios generando borradores de apuntes pendientes de revisión y de adjuntar facturas y recibos a cada asiento del libro diario. Gestiona entidades con CIF distinto, con libros contables separados y ejercicios contables propios.
 
 ## Stack
 FastAPI + Node.js (React + Vite) + PostgreSQL. UI con el estándar Google Material Design en todas las pantallas, existentes y futuras.
@@ -11,6 +11,7 @@ La aplicación se usa en equipos de escritorio: no se diseña ni se verifica par
 ## Decisiones costosas
 Modelo de permisos o roles: un rol por usuario, elegido entre tres fijos (administrador/a, tesorero/a y solo lectura). Los usuarios son globales a la ONG, no por entidad. El rol se comprueba en la API y se refleja en la interfaz; la matriz de qué puede hacer cada rol en cada módulo se fija al construir la #6.
 Cuadro de cuentas base compartido entre todas las entidades (PGC español hasta 3 dígitos ya definido), ampliable con cuentas propias hasta 8 dígitos. Las cuentas compartidas se guardan en `cuentas` con `entidad_id` NULL; las de una entidad llevan su `entidad_id`. Al listar cuentas con `entidad_id`, `GET /cuentas` incluye también las cuentas base con `entidad_id` NULL, ya que son utilizables en cualquier entidad.
+Documentación justificativa del libro diario: los documentos (facturas, recibos) se adjuntan al asiento completo, no a cada apunte, y puede haber varios por asiento. Se admiten PDF, JPG y PNG de hasta 10 MB. Solo tesorería y administración adjuntan o eliminan documentos; solo lectura los consulta y descarga (el acceso de solo lectura al diario se fija en la #6/#17).
 
 ## Documentación
 La documentación siempre debe estar en español.
