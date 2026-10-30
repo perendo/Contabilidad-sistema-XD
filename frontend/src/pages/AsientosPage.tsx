@@ -6,6 +6,10 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import DownloadIcon from '@mui/icons-material/Download'
 import Alert from '@mui/material/Alert'
 import Button from '@mui/material/Button'
+import Dialog from '@mui/material/Dialog'
+import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import DialogTitle from '@mui/material/DialogTitle'
 import IconButton from '@mui/material/IconButton'
 import MenuItem from '@mui/material/MenuItem'
 import Paper from '@mui/material/Paper'
@@ -54,6 +58,7 @@ type Asiento = {
   fecha: string
   concepto: string
   descripcion: string | null
+  estado: 'borrador' | 'registrado'
   registrado_por_id: string
   creado_en: string
   modificado_en: string
@@ -177,6 +182,23 @@ function AsientosPage() {
   const [archivos, setArchivos] = useState<ArchivoSeleccionado[]>([])
   const [errorArchivos, setErrorArchivos] = useState('')
   const [avisoSubida, setAvisoSubida] = useState('')
+  const [archivoImportacion, setArchivoImportacion] = useState<File | null>(null)
+  const [cuentaImportacion, setCuentaImportacion] = useState('')
+  const [importando, setImportando] = useState(false)
+  const [resumenImportacion, setResumenImportacion] = useState<{
+    creados: number
+    omitidos: number
+    errores: string[]
+  } | null>(null)
+  const [errorImportacion, setErrorImportacion] = useState('')
+  const [errorAcciones, setErrorAcciones] = useState('')
+  const [asientoEditando, setAsientoEditando] = useState<Asiento | null>(null)
+  const [fechaEdit, setFechaEdit] = useState('')
+  const [conceptoEdit, setConceptoEdit] = useState('')
+  const [descripcionEdit, setDescripcionEdit] = useState('')
+  const [apuntesEdit, setApuntesEdit] = useState<ApunteFormulario[]>([])
+  const [guardandoEdicion, setGuardandoEdicion] = useState(false)
+  const [errorEdicion, setErrorEdicion] = useState('')
   const [pendienteReintento, setPendienteReintento] = useState<{
     asientoId: string
     archivos: ArchivoSeleccionado[]
@@ -253,6 +275,11 @@ function AsientosPage() {
     setArchivos([])
     setErrorArchivos('')
     setAvisoSubida('')
+    setArchivoImportacion(null)
+    setCuentaImportacion('')
+    setResumenImportacion(null)
+    setErrorImportacion('')
+    setErrorAcciones('')
     setPendienteReintento(null)
     setReintentando(false)
     setAvisoAdjuntos(null)
@@ -261,6 +288,14 @@ function AsientosPage() {
     contextoAlAdjuntar.current = null
     void cargarAsientos()
   }, [entidadSeleccionadaId, ejercicioSeleccionadoId, cargarAsientos])
+
+  const cuentasBancarias = cuentas.filter((cuenta) => cuenta.codigo.startsWith('57'))
+
+  useEffect(() => {
+    if (!cuentaImportacion && cuentasBancarias.length > 0) {
+      setCuentaImportacion(cuentasBancarias[0].id)
+    }
+  }, [cuentasBancarias, cuentaImportacion])
 
   const puedeCrear = usuario?.rol.nombre === 'administrador' || usuario?.rol.nombre === 'tesorero'
 
@@ -396,6 +431,131 @@ function AsientosPage() {
       await cargarAsientos()
     } finally {
       setReintentando(false)
+    }
+  }
+
+  const importarMovimientos = async () => {
+    if (!archivoImportacion) {
+      setErrorImportacion('Selecciona un archivo para importar.')
+      return
+    }
+    if (!cuentaImportacion) {
+      setErrorImportacion('Selecciona la cuenta bancaria de destino.')
+      return
+    }
+    if (!entidadSeleccionadaId || !ejercicioSeleccionadoId) {
+      setErrorImportacion('Selecciona una entidad y un ejercicio.')
+      return
+    }
+    const contextoInicial = { ...contextoActual.current }
+    setImportando(true)
+    setErrorImportacion('')
+    setResumenImportacion(null)
+    try {
+      const formulario = new FormData()
+      formulario.append('archivo', archivoImportacion)
+      formulario.append('entidad_id', entidadSeleccionadaId)
+      formulario.append('ejercicio_id', ejercicioSeleccionadoId)
+      formulario.append('cuenta_id', cuentaImportacion)
+      const { data } = await cliente.post<{
+        creados: number
+        omitidos: number
+        errores: string[]
+      }>('/asientos/importar', formulario)
+      if (!sigueElContexto(contextoInicial)) return
+      setResumenImportacion(data)
+      setArchivoImportacion(null)
+      await cargarAsientos()
+    } catch (fallo) {
+      if (sigueElContexto(contextoInicial)) {
+        const detalle = detalleError(fallo)
+        setErrorImportacion(detalle || 'No se pudo importar el archivo.')
+      }
+    } finally {
+      setImportando(false)
+    }
+  }
+
+  const abrirEdicion = (asiento: Asiento) => {
+    setAsientoEditando(asiento)
+    setFechaEdit(asiento.fecha)
+    setConceptoEdit(asiento.concepto)
+    setDescripcionEdit(asiento.descripcion ?? '')
+    setApuntesEdit(
+      asiento.apuntes.map((apunte) => ({
+        cuenta_id: apunte.cuenta_id,
+        tipo: apunte.tipo,
+        importe: apunte.importe,
+      })),
+    )
+    setErrorEdicion('')
+  }
+
+  const cerrarEdicion = () => {
+    setAsientoEditando(null)
+    setErrorEdicion('')
+  }
+
+  const guardarEdicion = async () => {
+    if (!asientoEditando) return
+    const contextoInicial = { ...contextoActual.current }
+    setGuardandoEdicion(true)
+    setErrorEdicion('')
+    try {
+      const payload = {
+        fecha: fechaEdit,
+        concepto: conceptoEdit,
+        descripcion: descripcionEdit || undefined,
+        apuntes: apuntesEdit
+          .filter((apunte) => apunte.cuenta_id && apunte.importe)
+          .map((apunte) => ({
+            cuenta_id: apunte.cuenta_id,
+            tipo: apunte.tipo,
+            importe: apunte.importe,
+          })),
+      }
+      await cliente.patch(`/asientos/${asientoEditando.id}`, payload)
+      if (!sigueElContexto(contextoInicial)) return
+      cerrarEdicion()
+      await cargarAsientos()
+    } catch (fallo) {
+      if (sigueElContexto(contextoInicial)) {
+        const detalle = detalleError(fallo)
+        setErrorEdicion(detalle || 'No se pudo guardar el borrador.')
+      }
+    } finally {
+      setGuardandoEdicion(false)
+    }
+  }
+
+  const aprobarBorrador = async (asientoId: string) => {
+    const contextoInicial = { ...contextoActual.current }
+    setErrorAcciones('')
+    try {
+      await cliente.post(`/asientos/${asientoId}/aprobar`)
+      if (!sigueElContexto(contextoInicial)) return
+      await cargarAsientos()
+    } catch (fallo) {
+      if (sigueElContexto(contextoInicial)) {
+        const detalle = detalleError(fallo)
+        setErrorAcciones(detalle || 'No se pudo aprobar el borrador.')
+      }
+    }
+  }
+
+  const rechazarBorrador = async (asientoId: string) => {
+    if (!window.confirm('¿Rechazar y eliminar este borrador?')) return
+    const contextoInicial = { ...contextoActual.current }
+    setErrorAcciones('')
+    try {
+      await cliente.delete(`/asientos/${asientoId}`)
+      if (!sigueElContexto(contextoInicial)) return
+      await cargarAsientos()
+    } catch (fallo) {
+      if (sigueElContexto(contextoInicial)) {
+        const detalle = detalleError(fallo)
+        setErrorAcciones(detalle || 'No se pudo rechazar el borrador.')
+      }
     }
   }
 
@@ -585,6 +745,62 @@ function AsientosPage() {
         </Paper>
       )}
 
+      {puedeCrear && (
+        <Paper component="section" elevation={1} sx={{ p: 3 }}>
+          <Typography variant="h5" component="h2" gutterBottom>
+            Importar movimientos bancarios
+          </Typography>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            {entidadSeleccionada?.nombre} · Ejercicio {ejercicioSeleccionado?.anio}
+          </Typography>
+          <Stack spacing={2}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: { sm: 'center' } }}>
+              <Button variant="outlined" component="label" startIcon={<AttachFileIcon />} sx={{ alignSelf: 'flex-start' }}>
+                Seleccionar archivo Excel
+                <input
+                  type="file"
+                  hidden
+                  accept=".xlsx,.xls"
+                  onChange={(evento) => {
+                    const archivo = evento.target.files?.[0] ?? null
+                    evento.target.value = ''
+                    setArchivoImportacion(archivo)
+                    setErrorImportacion('')
+                    setResumenImportacion(null)
+                  }}
+                />
+              </Button>
+              <Typography variant="body2">
+                {archivoImportacion ? archivoImportacion.name : 'Ningún archivo seleccionado'}
+              </Typography>
+            </Stack>
+            <TextField
+              select
+              label="Cuenta bancaria"
+              value={cuentaImportacion}
+              onChange={(e) => setCuentaImportacion(e.target.value)}
+              sx={{ maxWidth: 360 }}
+            >
+              {(cuentasBancarias.length > 0 ? cuentasBancarias : cuentas).map((cuenta) => (
+                <MenuItem key={cuenta.id} value={cuenta.id}>
+                  {cuenta.codigo} - {cuenta.nombre}
+                </MenuItem>
+              ))}
+            </TextField>
+            <Button variant="contained" onClick={() => void importarMovimientos()} disabled={importando || !archivoImportacion}>
+              {importando ? 'Importando…' : 'Importar movimientos'}
+            </Button>
+            {errorImportacion && <Alert severity="error">{errorImportacion}</Alert>}
+            {resumenImportacion && (
+              <Alert severity={resumenImportacion.creados > 0 ? 'success' : 'info'}>
+                {`Borradores creados: ${resumenImportacion.creados}. Omitidos: ${resumenImportacion.omitidos}.`}
+                {resumenImportacion.errores.length > 0 ? ` ${resumenImportacion.errores.join('. ')}` : ''}
+              </Alert>
+            )}
+          </Stack>
+        </Paper>
+      )}
+
       <Paper component="section" elevation={1} sx={{ p: 3 }}>
         <Typography variant="h5" component="h2" gutterBottom>
           Asientos registrados
@@ -602,6 +818,11 @@ function AsientosPage() {
             {avisoAdjuntos.texto}
           </Alert>
         )}
+        {errorAcciones && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {errorAcciones}
+          </Alert>
+        )}
         {errorListado && (
           <Alert severity="error" sx={{ mt: 2 }}>
             {errorListado}
@@ -617,8 +838,10 @@ function AsientosPage() {
                   <TableCell>Nº</TableCell>
                   <TableCell>Fecha</TableCell>
                   <TableCell>Concepto</TableCell>
+                  <TableCell>Estado</TableCell>
                   <TableCell>Apuntes</TableCell>
                   <TableCell>Documentos</TableCell>
+                  <TableCell>Acciones</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -627,6 +850,7 @@ function AsientosPage() {
                     <TableCell>{asiento.numero_asiento}</TableCell>
                     <TableCell>{asiento.fecha}</TableCell>
                     <TableCell>{asiento.concepto}</TableCell>
+                    <TableCell>{asiento.estado === 'borrador' ? 'Borrador' : 'Registrado'}</TableCell>
                     <TableCell>
                       {asiento.apuntes.map((apunte) => (
                         <Typography key={apunte.id} variant="body2">
@@ -667,6 +891,21 @@ function AsientosPage() {
                         </Stack>
                       )}
                     </TableCell>
+                    <TableCell>
+                      {asiento.estado === 'borrador' && puedeCrear && (
+                        <Stack spacing={0}>
+                          <Button size="small" onClick={() => abrirEdicion(asiento)}>
+                            Editar
+                          </Button>
+                          <Button size="small" color="success" onClick={() => void aprobarBorrador(asiento.id)}>
+                            Aprobar
+                          </Button>
+                          <Button size="small" color="error" onClick={() => void rechazarBorrador(asiento.id)}>
+                            Rechazar
+                          </Button>
+                        </Stack>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -674,6 +913,61 @@ function AsientosPage() {
           </TableContainer>
         )}
       </Paper>
+
+      <Dialog open={asientoEditando !== null} onClose={cerrarEdicion} fullWidth maxWidth="md">
+        <DialogTitle>Editar borrador</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField label="Fecha" type="date" value={fechaEdit} onChange={(e) => setFechaEdit(e.target.value)} slotProps={{ inputLabel: { shrink: true } }} />
+            <TextField label="Concepto" value={conceptoEdit} onChange={(e) => setConceptoEdit(e.target.value)} />
+            <TextField label="Descripción" value={descripcionEdit} onChange={(e) => setDescripcionEdit(e.target.value)} />
+            <Typography variant="subtitle1">Apuntes</Typography>
+            {apuntesEdit.map((apunte, indice) => (
+              <Stack key={indice} direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ alignItems: { sm: 'center' } }}>
+                <Select value={apunte.cuenta_id} onChange={(e) => {
+                  const copia = [...apuntesEdit]
+                  copia[indice] = { ...copia[indice], cuenta_id: e.target.value }
+                  setApuntesEdit(copia)
+                }} displayEmpty sx={{ flex: 2, minWidth: 200 }}>
+                  <MenuItem value="" disabled>Selecciona cuenta</MenuItem>
+                  {cuentas.map((cuenta) => (
+                    <MenuItem key={cuenta.id} value={cuenta.id}>
+                      {cuenta.codigo} - {cuenta.nombre}
+                    </MenuItem>
+                  ))}
+                </Select>
+                <Select value={apunte.tipo} onChange={(e) => {
+                  const copia = [...apuntesEdit]
+                  copia[indice] = { ...copia[indice], tipo: e.target.value as 'debe' | 'haber' }
+                  setApuntesEdit(copia)
+                }} sx={{ flex: 1, minWidth: 120 }}>
+                  <MenuItem value="debe">Debe</MenuItem>
+                  <MenuItem value="haber">Haber</MenuItem>
+                </Select>
+                <TextField label="Importe" value={apunte.importe} onChange={(e) => {
+                  const copia = [...apuntesEdit]
+                  copia[indice] = { ...copia[indice], importe: e.target.value }
+                  setApuntesEdit(copia)
+                }} sx={{ flex: 1, minWidth: 120 }} />
+                <IconButton onClick={() => setApuntesEdit((actuales) => actuales.filter((_, i) => i !== indice))} disabled={apuntesEdit.length <= 2}>
+                  <DeleteIcon />
+                </IconButton>
+              </Stack>
+            ))}
+            <Button startIcon={<AddIcon />} onClick={() => setApuntesEdit((actuales) => [...actuales, { cuenta_id: '', tipo: 'debe', importe: '' }])} variant="outlined">
+              Añadir apunte
+            </Button>
+            {errorEdicion && <Alert severity="error">{errorEdicion}</Alert>}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={cerrarEdicion}>Cancelar</Button>
+          <Button variant="contained" onClick={() => void guardarEdicion()} disabled={guardandoEdicion}>
+            {guardandoEdicion ? 'Guardando…' : 'Guardar'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
     </Stack>
   )
 }

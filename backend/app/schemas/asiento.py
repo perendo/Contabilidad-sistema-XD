@@ -11,6 +11,9 @@ class TipoApunte(str, Enum):
     HABER = "haber"
 
 
+from app.models.asiento import EstadoAsiento
+
+
 class ApunteCreate(BaseModel):
     cuenta_id: uuid.UUID
     tipo: TipoApunte
@@ -35,6 +38,29 @@ class DocumentoRead(BaseModel):
     tamano: int
     creado_en: datetime
 
+
+class AsientoUpdate(BaseModel):
+    fecha: date | None = None
+    concepto: str | None = None
+    descripcion: str | None = None
+    apuntes: list[ApunteCreate] | None = None
+
+    @model_validator(mode="after")
+    def validar_partida_doble_si_apuntes(self):
+        if self.apuntes is None:
+            return self
+        if len(self.apuntes) < 2:
+            raise ValueError("Un asiento debe tener al menos dos apuntes")
+
+        total_debe = sum((a.importe for a in self.apuntes if a.tipo == TipoApunte.DEBE), Decimal("0"))
+        total_haber = sum((a.importe for a in self.apuntes if a.tipo == TipoApunte.HABER), Decimal("0"))
+
+        if total_debe != total_haber:
+            raise ValueError("El asiento no está cuadrado. Debe y Haber deben ser iguales")
+        if total_debe <= 0:
+            raise ValueError("Los importes deben ser superiores a 0")
+
+        return self
 
 class AsientoCreate(BaseModel):
     entidad_id: uuid.UUID
@@ -70,6 +96,7 @@ class AsientoRead(BaseModel):
     fecha: date
     concepto: str
     descripcion: str | None = None
+    estado: EstadoAsiento = EstadoAsiento.REGISTRADO
     registrado_por_id: uuid.UUID
     creado_en: datetime
     modificado_en: datetime

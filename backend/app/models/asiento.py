@@ -15,8 +15,16 @@ class TipoApunte(str, enum.Enum):
     HABER = "haber"
 
 
+class EstadoAsiento(str, enum.Enum):
+    BORRADOR = "borrador"
+    REGISTRADO = "registrado"
+
+
 class Asiento(Base):
     __tablename__ = "asientos"
+    __table_args__ = (
+        UniqueConstraint("entidad_id", "ejercicio_id", "numero_asiento", name="uq_asientos_entidad_ejercicio_numero"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     entidad_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("entidades.id"), nullable=False)
@@ -25,6 +33,9 @@ class Asiento(Base):
     fecha: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     concepto: Mapped[str] = mapped_column(String, nullable=False)
     descripcion: Mapped[str] = mapped_column(Text, nullable=True)
+    estado: Mapped[EstadoAsiento] = mapped_column(
+        Enum(EstadoAsiento), nullable=False, default=EstadoAsiento.REGISTRADO
+    )
     registrado_por_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("usuarios.id"), nullable=False)
     creado_en: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     modificado_en: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
