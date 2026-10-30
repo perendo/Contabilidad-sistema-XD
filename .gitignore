@@ -29,3 +29,6 @@ Thumbs.db
 
 # Varios
 *.log
+
+# Directorio Data de la raiz (subido por error; se mantiene en disco)
+Data/
